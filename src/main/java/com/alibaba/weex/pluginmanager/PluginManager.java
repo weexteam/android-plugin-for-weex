@@ -33,17 +33,6 @@ public class PluginManager {
     }
   }
 
-//  public static void registerComponents(HashMap<String, String> components) {
-//    for (Map.Entry<String, String> component : components.entrySet()) {
-//      registerComponent(component.getKey(), component.getValue());
-//    }
-//  }
-//
-//  public static void registerModules(HashMap<String, String> modules) {
-//    for (Map.Entry<String, String> module : modules.entrySet()) {
-//      registerModule(module.getKey(), module.getValue());
-//    }
-//  }
   public static void registerComponents(HashMap<String, PluginEntry> components) {
     for (Map.Entry<String, PluginEntry> component : components.entrySet()) {
       registerComponent(component.getKey(), component.getValue().pluginClass);
