@@ -27,70 +27,59 @@ import com.taobao.weex.ui.component.WXComponent;
  */
 public final class PluginEntry {
 
-    /**
-     * The name of the service that this plugin implements
-     */
-    public final String service;
+  /**
+   * The name of the service that this plugin implements
+   */
+  public final String mService;
 
-    /**
-     * The plugin class name that implements the service.
-     */
-    public final String pluginClass;
+  /**
+   * The plugin class name that implements the service.
+   */
+  public final String mPluginClass;
 
-    /**
-     * The pre-instantiated plugin to use for this entry.
-     */
-    public final IWXObject plugin;
+  /**
+   * The pre-instantiated plugin to use for this entry.
+   */
+  public final IWXObject mPlugin;
 
-    /**
-     * Flag that indicates the plugin object should be created when PluginManager is initialized.
-     */
-    public final boolean onload;
+  /**
+   * Flag that indicates the plugin object should be created when PluginManager is initialized.
+   */
+  public final boolean mOnload;
 
-    public final String category;
+  public final String mCategory;
 
-    /**
-     * Constructs with a CordovaPlugin already instantiated.
-     */
-    public PluginEntry(String service, IWXObject plugin) {
-        this(service, plugin.getClass().getName(), true, plugin);
+  /**
+   * Constructs with a CordovaPlugin already instantiated.
+   */
+  public PluginEntry(String service, IWXObject plugin) {
+    this(service, plugin.getClass().getName(), true, plugin);
+  }
+
+  public PluginEntry(String service, String pluginClass, boolean onload, String category) {
+    this(service, category, pluginClass, onload, null);
+  }
+
+  private PluginEntry(String service, String pluginClass, boolean onload, IWXObject plugin) {
+    this(service, calCategory(plugin), pluginClass, onload, plugin);
+  }
+
+  private PluginEntry(String service, String category, String pluginClass, boolean onload, IWXObject plugin) {
+    this.mService = service;
+    this.mCategory = category;
+    this.mPluginClass = pluginClass;
+    this.mOnload = onload;
+    this.mPlugin = plugin;
+  }
+
+  private static String calCategory(IWXObject plugin) {
+    if (plugin != null) {
+      if (plugin instanceof WXModule) {
+        return Constants.CATEGORY_MODULE;
+      } else if (plugin instanceof WXComponent) {
+        return Constants.CATEGORY_COMPONENT;
+      }
     }
-
-    /**
-     * @param service               The name of the service
-     * @param pluginClass           The plugin class name
-     * @param onload                Create plugin object when HTML page is loaded
-     */
-//    public PluginEntry(String service, String pluginClass, boolean onload) {
-//        this(service, pluginClass, onload, null);
-//    }
-
-
-
-    public PluginEntry(String service, String pluginClass, boolean onload, String category) {
-        this(service, category, pluginClass, onload, null);
-    }
-
-    private PluginEntry(String service, String pluginClass, boolean onload, IWXObject plugin) {
-        this(service, calCategory(plugin), pluginClass, onload, plugin);
-    }
-
-    private PluginEntry(String service, String category, String pluginClass, boolean onload, IWXObject plugin) {
-        this.service = service;
-        this.category = category;
-        this.pluginClass = pluginClass;
-        this.onload = onload;
-        this.plugin = plugin;
-    }
-
-    private static String calCategory(IWXObject plugin) {
-        if (plugin != null) {
-            if (plugin instanceof WXModule) {
-                return  "module";
-            } else if (plugin instanceof WXComponent) {
-                return  "component";
-            }
-        }
-        return "module";
-    }
+    return Constants.CATEGORY_MODULE;
+  }
 }

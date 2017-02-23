@@ -28,13 +28,10 @@ import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class ConfigXmlParser {
   private static String TAG = "ConfigXmlParser";
 
-  private String launchUrl = "file:///android_asset/www/index.html";
   private static HashMap<String, PluginEntry> sComponents = new HashMap<>(20);
   private static HashMap<String, PluginEntry> sModules = new HashMap<>(20);
 
@@ -46,104 +43,88 @@ public class ConfigXmlParser {
     return sComponents;
   }
 
-  public String getLaunchUrl() {
-    return launchUrl;
-  }
 
-  public synchronized void parse(Context action) {
+  public synchronized void parse(Context context) {
     // First checking the class namespace for config.xml
-    int id = action.getResources().getIdentifier("config", "xml", action.getClass().getPackage().getName());
+    int id = context.getResources().getIdentifier("config", "xml", context.getClass().getPackage().getName());
     if (id == 0) {
       // If we couldn't find config.xml there, we'll look in the namespace from AndroidManifest.xml
-      id = action.getResources().getIdentifier("config", "xml", action.getPackageName());
+      id = context.getResources().getIdentifier("config", "xml", context.getPackageName());
       if (id == 0) {
         Log.e(TAG, "res/xml/config.xml is missing!");
         return;
       }
     }
-    parse(action.getResources().getXml(id));
+    new ParseUtils().parse(context.getResources().getXml(id));
   }
 
-  boolean insideFeature = false;
-  String service = "", pluginClass = "", paramType = "";
-  boolean onload = false;
-  String category = "module";
-  String api = "";
+  private static class ParseUtils {
+    private String mService = "";
+    private boolean mInsideFeature = false;
+    private String mPluginClass = "";
+    private String mParamType = "";
+    private boolean mOnLoad = false;
+    private String mCategory = Constants.CATEGORY_MODULE;
+    private String mApi = "";
 
-  public void parse(XmlPullParser xml) {
-    int eventType = -1;
+    private void parse(XmlPullParser xml) {
+      int eventType = -1;
 
-    while (eventType != XmlPullParser.END_DOCUMENT) {
-      if (eventType == XmlPullParser.START_TAG) {
-        handleStartTag(xml);
-      } else if (eventType == XmlPullParser.END_TAG) {
-        handleEndTag(xml);
+      while (eventType != XmlPullParser.END_DOCUMENT) {
+        if (eventType == XmlPullParser.START_TAG) {
+          handleStartTag(xml);
+        } else if (eventType == XmlPullParser.END_TAG) {
+          handleEndTag(xml);
+        }
+        try {
+          eventType = xml.next();
+        } catch (XmlPullParserException e) {
+          e.printStackTrace();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
       }
-      try {
-        eventType = xml.next();
-      } catch (XmlPullParserException e) {
-        e.printStackTrace();
-      } catch (IOException e) {
-        e.printStackTrace();
+    }
+
+    private void handleStartTag(XmlPullParser xml) {
+      String strNode = xml.getName();
+      if (strNode.equals(Constants.TAG_FEATURE)) {
+        mInsideFeature = true;
+        mService = xml.getAttributeValue(null, Constants.ATTR_NAME);
+      } else if (mInsideFeature && strNode.equals(Constants.TAG_PARAM)) {
+        mParamType = xml.getAttributeValue(null, Constants.ATTR_NAME);
+        if (mParamType.equals(Constants.ATTR_SERVICE)) // check if it is using the older mService param
+          mService = xml.getAttributeValue(null, Constants.ATTR_VALUE);
+        else if (mParamType.equals(Constants.ATTR_PACKAGE) || mParamType.equals(Constants.ATTR_ANDROID_PACKAGE))
+          mPluginClass = xml.getAttributeValue(null, Constants.ATTR_VALUE);
+        else if (mParamType.equals(Constants.ATTR_ONLOAD))
+          mOnLoad = "true".equals(xml.getAttributeValue(null, Constants.ATTR_VALUE));
+        else if (mParamType.equals(Constants.ATTR_CATEGORY))
+          mCategory = xml.getAttributeValue(null, Constants.ATTR_VALUE);
+        else if (mParamType.equals(Constants.ATTR_API))
+          mApi = xml.getAttributeValue(null, Constants.ATTR_VALUE);
+      }
+    }
+
+    private void handleEndTag(XmlPullParser xml) {
+      String strNode = xml.getName();
+      if (strNode.equals(Constants.TAG_FEATURE)) {
+        if (TextUtils.equals(Constants.CATEGORY_MODULE, mCategory)) {
+          sModules.put(mApi, new PluginEntry(mApi, mPluginClass, mOnLoad, Constants.CATEGORY_MODULE));
+        } else if (TextUtils.equals(Constants.CATEGORY_COMPONENT, mCategory)) {
+          sComponents.put(mApi, new PluginEntry(mApi, mPluginClass, mOnLoad, Constants.CATEGORY_COMPONENT));
+        }
+
+        mService = "";
+        mPluginClass = "";
+        mInsideFeature = false;
+        mOnLoad = false;
+        mCategory = Constants.CATEGORY_MODULE;
+        mApi = "";
+        mParamType = "";
+
       }
     }
   }
 
-  public void handleStartTag(XmlPullParser xml) {
-    String strNode = xml.getName();
-    if (strNode.equals("feature")) {
-      //Check for supported feature sets  aka. plugins (Accelerometer, Geolocation, etc)
-      //Set the bit for reading params
-      insideFeature = true;
-      service = xml.getAttributeValue(null, "name");
-    } else if (insideFeature && strNode.equals("param")) {
-      paramType = xml.getAttributeValue(null, "name");
-      if (paramType.equals("service")) // check if it is using the older service param
-        service = xml.getAttributeValue(null, "value");
-      else if (paramType.equals("package") || paramType.equals("android-package"))
-        pluginClass = xml.getAttributeValue(null, "value");
-      else if (paramType.equals("onload"))
-        onload = "true".equals(xml.getAttributeValue(null, "value"));
-      else if(paramType.equals("category"))
-        category = xml.getAttributeValue(null, "value");
-      else if(paramType.equals("api"))
-        api = xml.getAttributeValue(null, "value");
-    } else if (strNode.equals("content")) {
-      String src = xml.getAttributeValue(null, "src");
-      if (src != null) {
-        setStartUrl(src);
-      }
-    }
-  }
-
-  public void handleEndTag(XmlPullParser xml) {
-    String strNode = xml.getName();
-    if (strNode.equals("feature")) {
-      if (TextUtils.equals("module", category)) {
-        sModules.put(api, new PluginEntry(api, pluginClass, onload, "module"));
-      } else if (TextUtils.equals("component", category)) {
-        sComponents.put(api, new PluginEntry(api, pluginClass, onload, "component"));
-      }
-
-      service = "";
-      pluginClass = "";
-      insideFeature = false;
-      onload = false;
-      category = "module";
-      api = "";
-    }
-  }
-
-  private void setStartUrl(String src) {
-    Pattern schemeRegex = Pattern.compile("^[a-z-]+://");
-    Matcher matcher = schemeRegex.matcher(src);
-    if (matcher.find()) {
-      launchUrl = src;
-    } else {
-      if (src.charAt(0) == '/') {
-        src = src.substring(1);
-      }
-      launchUrl = "file:///android_asset/www/" + src;
-    }
-  }
 }
