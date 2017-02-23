@@ -50,7 +50,9 @@ public class ConfigXmlParser {
     return mComponents;
   }
 
-
+  /**
+   * parse the config.xml found in your app's resource to get the plugin info.
+   */
   public synchronized void parse(Context context) {
     // First checking the class namespace for config.xml
     int id = context.getResources().getIdentifier("config", "xml", context.getClass().getPackage().getName());

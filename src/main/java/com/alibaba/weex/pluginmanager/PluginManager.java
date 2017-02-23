@@ -15,6 +15,9 @@ public class PluginManager {
   private static HashMap<String, PluginEntry> sComponents = new HashMap<>();
   private static HashMap<String, PluginEntry> sModules = new HashMap<>();
 
+  /**
+   * Load plugin settings from config file config.xml and register them to weex core.
+   */
   public static void init(Context context) {
     loadConfig(context);
     registerComponents(getComponents());
@@ -30,7 +33,6 @@ public class PluginManager {
     } catch (WXException e) {
       e.printStackTrace();
     }
-
   }
 
   public static void registerModule(String name, String className) {
@@ -56,13 +58,6 @@ public class PluginManager {
     }
   }
 
-  private static void loadConfig(Context context) {
-    ConfigXmlParser parser = new ConfigXmlParser();
-    parser.parse(context);
-    sComponents = parser.getPluginComponents();
-    sModules = parser.getPluginModules();
-  }
-
   public static HashMap<String, PluginEntry> getComponents() {
     return sComponents;
   }
@@ -77,5 +72,12 @@ public class PluginManager {
 
   public static void setModules(HashMap<String, PluginEntry> modules) {
     sModules = modules;
+  }
+
+  private static void loadConfig(Context context) {
+    ConfigXmlParser parser = new ConfigXmlParser();
+    parser.parse(context);
+    sComponents = parser.getPluginComponents();
+    sModules = parser.getPluginModules();
   }
 }
