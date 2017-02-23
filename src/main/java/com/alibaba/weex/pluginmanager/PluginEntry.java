@@ -46,15 +46,10 @@ public final class PluginEntry {
    * Flag that indicates the plugin object should be created when PluginManager is initialized.
    */
   public final boolean mOnload;
-
-  public final String mCategory;
-
   /**
-   * Constructs with a CordovaPlugin already instantiated.
+   * The plugin category, "module" or "component".
    */
-  public PluginEntry(String service, IWXObject plugin) {
-    this(service, plugin.getClass().getName(), true, plugin);
-  }
+  public final String mCategory;
 
   public PluginEntry(String service, String pluginClass, boolean onload, String category) {
     this(service, category, pluginClass, onload, null);

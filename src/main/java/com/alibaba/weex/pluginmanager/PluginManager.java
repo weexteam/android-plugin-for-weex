@@ -12,10 +12,13 @@ import java.util.Map;
  * Created by budao on 2016/10/25.
  */
 public class PluginManager {
-  public static void loadFromConfig(Context context) {
-    PluginConfig.init(context);
-    registerComponents(PluginConfig.getComponents());
-    registerModules(PluginConfig.getModules());
+  private static HashMap<String, PluginEntry> sComponents = new HashMap<>();
+  private static HashMap<String, PluginEntry> sModules = new HashMap<>();
+
+  public static void init(Context context) {
+    loadConfig(context);
+    registerComponents(getComponents());
+    registerModules(getModules());
   }
 
   public static void registerComponent(String name, String className) {
@@ -51,5 +54,28 @@ public class PluginManager {
     for (Map.Entry<String, PluginEntry> module : modules.entrySet()) {
       registerModule(module.getKey(), module.getValue().mPluginClass);
     }
+  }
+
+  private static void loadConfig(Context context) {
+    ConfigXmlParser parser = new ConfigXmlParser();
+    parser.parse(context);
+    sComponents = parser.getPluginComponents();
+    sModules = parser.getPluginModules();
+  }
+
+  public static HashMap<String, PluginEntry> getComponents() {
+    return sComponents;
+  }
+
+  public static void setComponents(HashMap<String, PluginEntry> components) {
+    sComponents = components;
+  }
+
+  public static HashMap<String, PluginEntry> getModules() {
+    return sModules;
+  }
+
+  public static void setModules(HashMap<String, PluginEntry> modules) {
+    sModules = modules;
   }
 }

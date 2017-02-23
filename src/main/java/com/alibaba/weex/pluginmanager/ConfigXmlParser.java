@@ -31,16 +31,23 @@ import java.util.HashMap;
 
 public class ConfigXmlParser {
   private static String TAG = "ConfigXmlParser";
+  private String mService = "";
+  private boolean mInsideFeature = false;
+  private boolean mOnLoad = false;
+  private String mApi = "";
+  private String mPluginClass = "";
+  private String mParamType = "";
+  private String mCategory = Constants.CATEGORY_MODULE;
+  private HashMap<String, PluginEntry> mComponents = new HashMap<>(20);
+  private HashMap<String, PluginEntry> mModules = new HashMap<>(20);
 
-  private static HashMap<String, PluginEntry> sComponents = new HashMap<>(20);
-  private static HashMap<String, PluginEntry> sModules = new HashMap<>(20);
 
   public HashMap<String, PluginEntry> getPluginModules() {
-    return sModules;
+    return mModules;
   }
 
   public HashMap<String, PluginEntry> getPluginComponents() {
-    return sComponents;
+    return mComponents;
   }
 
 
@@ -55,75 +62,65 @@ public class ConfigXmlParser {
         return;
       }
     }
-    new ParseUtils().parse(context.getResources().getXml(id));
+    parse(context.getResources().getXml(id));
   }
 
-  private static class ParseUtils {
-    private String mService = "";
-    private boolean mInsideFeature = false;
-    private String mPluginClass = "";
-    private String mParamType = "";
-    private boolean mOnLoad = false;
-    private String mCategory = Constants.CATEGORY_MODULE;
-    private String mApi = "";
 
-    private void parse(XmlPullParser xml) {
-      int eventType = -1;
+  private void parse(XmlPullParser xml) {
+    int eventType = -1;
 
-      while (eventType != XmlPullParser.END_DOCUMENT) {
-        if (eventType == XmlPullParser.START_TAG) {
-          handleStartTag(xml);
-        } else if (eventType == XmlPullParser.END_TAG) {
-          handleEndTag(xml);
-        }
-        try {
-          eventType = xml.next();
-        } catch (XmlPullParserException e) {
-          e.printStackTrace();
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
+    while (eventType != XmlPullParser.END_DOCUMENT) {
+      if (eventType == XmlPullParser.START_TAG) {
+        handleStartTag(xml);
+      } else if (eventType == XmlPullParser.END_TAG) {
+        handleEndTag(xml);
+      }
+      try {
+        eventType = xml.next();
+      } catch (XmlPullParserException e) {
+        e.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
       }
     }
+  }
 
-    private void handleStartTag(XmlPullParser xml) {
-      String strNode = xml.getName();
-      if (strNode.equals(Constants.TAG_FEATURE)) {
-        mInsideFeature = true;
-        mService = xml.getAttributeValue(null, Constants.ATTR_NAME);
-      } else if (mInsideFeature && strNode.equals(Constants.TAG_PARAM)) {
-        mParamType = xml.getAttributeValue(null, Constants.ATTR_NAME);
-        if (mParamType.equals(Constants.ATTR_SERVICE)) // check if it is using the older mService param
-          mService = xml.getAttributeValue(null, Constants.ATTR_VALUE);
-        else if (mParamType.equals(Constants.ATTR_PACKAGE) || mParamType.equals(Constants.ATTR_ANDROID_PACKAGE))
-          mPluginClass = xml.getAttributeValue(null, Constants.ATTR_VALUE);
-        else if (mParamType.equals(Constants.ATTR_ONLOAD))
-          mOnLoad = "true".equals(xml.getAttributeValue(null, Constants.ATTR_VALUE));
-        else if (mParamType.equals(Constants.ATTR_CATEGORY))
-          mCategory = xml.getAttributeValue(null, Constants.ATTR_VALUE);
-        else if (mParamType.equals(Constants.ATTR_API))
-          mApi = xml.getAttributeValue(null, Constants.ATTR_VALUE);
-      }
+  private void handleStartTag(XmlPullParser xml) {
+    String strNode = xml.getName();
+    if (strNode.equals(Constants.TAG_FEATURE)) {
+      mInsideFeature = true;
+      mService = xml.getAttributeValue(null, Constants.ATTR_NAME);
+    } else if (mInsideFeature && strNode.equals(Constants.TAG_PARAM)) {
+      mParamType = xml.getAttributeValue(null, Constants.ATTR_NAME);
+      if (mParamType.equals(Constants.ATTR_SERVICE)) // check if it is using the older mService param
+        mService = xml.getAttributeValue(null, Constants.ATTR_VALUE);
+      else if (mParamType.equals(Constants.ATTR_PACKAGE) || mParamType.equals(Constants.ATTR_ANDROID_PACKAGE))
+        mPluginClass = xml.getAttributeValue(null, Constants.ATTR_VALUE);
+      else if (mParamType.equals(Constants.ATTR_ONLOAD))
+        mOnLoad = "true".equals(xml.getAttributeValue(null, Constants.ATTR_VALUE));
+      else if (mParamType.equals(Constants.ATTR_CATEGORY))
+        mCategory = xml.getAttributeValue(null, Constants.ATTR_VALUE);
+      else if (mParamType.equals(Constants.ATTR_API))
+        mApi = xml.getAttributeValue(null, Constants.ATTR_VALUE);
     }
+  }
 
-    private void handleEndTag(XmlPullParser xml) {
-      String strNode = xml.getName();
-      if (strNode.equals(Constants.TAG_FEATURE)) {
-        if (TextUtils.equals(Constants.CATEGORY_MODULE, mCategory)) {
-          sModules.put(mApi, new PluginEntry(mApi, mPluginClass, mOnLoad, Constants.CATEGORY_MODULE));
-        } else if (TextUtils.equals(Constants.CATEGORY_COMPONENT, mCategory)) {
-          sComponents.put(mApi, new PluginEntry(mApi, mPluginClass, mOnLoad, Constants.CATEGORY_COMPONENT));
-        }
-
-        mService = "";
-        mPluginClass = "";
-        mInsideFeature = false;
-        mOnLoad = false;
-        mCategory = Constants.CATEGORY_MODULE;
-        mApi = "";
-        mParamType = "";
-
+  private void handleEndTag(XmlPullParser xml) {
+    String strNode = xml.getName();
+    if (strNode.equals(Constants.TAG_FEATURE)) {
+      if (TextUtils.equals(Constants.CATEGORY_MODULE, mCategory)) {
+        mModules.put(mApi, new PluginEntry(mApi, mPluginClass, mOnLoad, Constants.CATEGORY_MODULE));
+      } else if (TextUtils.equals(Constants.CATEGORY_COMPONENT, mCategory)) {
+        mComponents.put(mApi, new PluginEntry(mApi, mPluginClass, mOnLoad, Constants.CATEGORY_COMPONENT));
       }
+
+      mService = "";
+      mPluginClass = "";
+      mInsideFeature = false;
+      mOnLoad = false;
+      mCategory = Constants.CATEGORY_MODULE;
+      mApi = "";
+      mParamType = "";
     }
   }
 
