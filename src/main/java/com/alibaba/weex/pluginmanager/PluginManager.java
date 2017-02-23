@@ -20,8 +20,8 @@ public class PluginManager {
    */
   public static void init(Context context) {
     loadConfig(context);
-    registerComponents(getComponents());
-    registerModules(getModules());
+    registerComponents(sComponents);
+    registerModules(sModules);
   }
 
   public static void registerComponent(String name, String className) {
@@ -46,32 +46,16 @@ public class PluginManager {
     }
   }
 
-  public static void registerComponents(HashMap<String, PluginEntry> components) {
+  private static void registerComponents(HashMap<String, PluginEntry> components) {
     for (Map.Entry<String, PluginEntry> component : components.entrySet()) {
       registerComponent(component.getKey(), component.getValue().mPluginClass);
     }
   }
 
-  public static void registerModules(HashMap<String, PluginEntry> modules) {
+  private static void registerModules(HashMap<String, PluginEntry> modules) {
     for (Map.Entry<String, PluginEntry> module : modules.entrySet()) {
       registerModule(module.getKey(), module.getValue().mPluginClass);
     }
-  }
-
-  public static HashMap<String, PluginEntry> getComponents() {
-    return sComponents;
-  }
-
-  public static void setComponents(HashMap<String, PluginEntry> components) {
-    sComponents = components;
-  }
-
-  public static HashMap<String, PluginEntry> getModules() {
-    return sModules;
-  }
-
-  public static void setModules(HashMap<String, PluginEntry> modules) {
-    sModules = modules;
   }
 
   private static void loadConfig(Context context) {
